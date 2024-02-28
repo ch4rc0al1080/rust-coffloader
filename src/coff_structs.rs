@@ -1,8 +1,5 @@
+use crate::utils::*;
 use std::convert::From;
-
-mod utils;
-
-
 #[derive(Debug)]
 pub struct CoffFileHeader {
     pub Machine: u16,
@@ -15,13 +12,13 @@ pub struct CoffFileHeader {
 }
 impl CoffFileHeader {
     pub fn build(contents: &Vec<u8>) -> CoffFileHeader {
-        let Machine = utils::vec2u16(&contents[..2]);
-        let NumberOfSections = utils::vec2u16(&contents[2..4]);
-        let TimeDateStamp = utils::vec2u32(&contents[4..8]);
-        let PointerToSymbolTable = utils::vec2u32(&contents[8..12]);
-        let NumberOfSymbols = utils::vec2u32(&contents[12..16]);
-        let SizeOfOptionalHeader = utils::vec2u16(&contents[16..18]);
-        let Characteristics = utils::vec2u16(&contents[18..20]);
+        let Machine = vec2u16(&contents[..2]);
+        let NumberOfSections = vec2u16(&contents[2..4]);
+        let TimeDateStamp = vec2u32(&contents[4..8]);
+        let PointerToSymbolTable = vec2u32(&contents[8..12]);
+        let NumberOfSymbols = vec2u32(&contents[12..16]);
+        let SizeOfOptionalHeader = vec2u16(&contents[16..18]);
+        let Characteristics = vec2u16(&contents[18..20]);
         CoffFileHeader {
             Machine,
             NumberOfSections,
@@ -70,15 +67,15 @@ impl SectionHeader {
     }
     pub fn build(contents: &Vec<u8>) -> SectionHeader {
         let Name = Vec::from(&contents[..8]);
-        let VirtualSize = utils::vec2u32(&contents[8..12]);
-        let VirtualAddress = utils::vec2u32(&contents[12..16]);
-        let SizeOfRawData = utils::vec2u32(&contents[16..20]);
-        let PointerToRawData = utils::vec2u32(&contents[20..24]);
-        let PointerToRelocations = utils::vec2u32(&contents[24..28]);
-        let PointerToLinenumbers = utils::vec2u32(&contents[28..32]);
-        let NumberOfRelocations = utils::vec2u16(&contents[32..34]);
-        let NumberOfLinenumbers = utils::vec2u16(&contents[34..36]);
-        let Characteristics = utils::vec2u32(&contents[36..40]);
+        let VirtualSize = vec2u32(&contents[8..12]);
+        let VirtualAddress = vec2u32(&contents[12..16]);
+        let SizeOfRawData = vec2u32(&contents[16..20]);
+        let PointerToRawData = vec2u32(&contents[20..24]);
+        let PointerToRelocations = vec2u32(&contents[24..28]);
+        let PointerToLinenumbers = vec2u32(&contents[28..32]);
+        let NumberOfRelocations = vec2u16(&contents[32..34]);
+        let NumberOfLinenumbers = vec2u16(&contents[34..36]);
+        let Characteristics = vec2u32(&contents[36..40]);
         SectionHeader {
             Name,
             VirtualSize,
@@ -108,8 +105,6 @@ impl SectionHeader {
     }
 }
 
-
-
 #[derive(Debug)]
 pub struct SymbolTable {
     pub Name: Vec<u8>,
@@ -123,15 +118,16 @@ pub struct SymbolTable {
 impl SymbolTable {
     pub fn get(coff_file: &Vec<u8>, pointer: &u32, index: &usize) -> SymbolTable {
         let coff_symbol_table_size: usize = 18;
-        let symbol_table =
-            SymbolTable::build(&coff_file[*pointer as usize + index * coff_symbol_table_size..].to_vec());
+        let symbol_table = SymbolTable::build(
+            &coff_file[*pointer as usize + index * coff_symbol_table_size..].to_vec(),
+        );
         symbol_table
     }
     pub fn build(contents: &Vec<u8>) -> SymbolTable {
         let Name = Vec::from(&contents[..8]);
-        let Value = utils::vec2u32(&contents[8..12]);
-        let SectionNumber = utils::vec2u16(&contents[12..14]);
-        let Type = utils::vec2u16(&contents[14..16]);
+        let Value = vec2u32(&contents[8..12]);
+        let SectionNumber = vec2u16(&contents[12..14]);
+        let Type = vec2u16(&contents[14..16]);
         let StorageClass = contents[16];
         let NumberOfAuxSymbols = contents[17];
         SymbolTable {
@@ -145,7 +141,7 @@ impl SymbolTable {
     }
     pub fn empty() -> SymbolTable {
         SymbolTable {
-            Name:Vec::new(),
+            Name: Vec::new(),
             Value: 0,
             SectionNumber: 0,
             Type: 0,
@@ -171,9 +167,9 @@ impl RelocationTable {
         reloc
     }
     pub fn build(contents: &Vec<u8>) -> RelocationTable {
-        let VirtualAddress = utils::vec2u32(&contents[..4]);
-        let SymbolTableIndex = utils::vec2u32(&contents[4..8]);
-        let Type = utils::vec2u16(&contents[8..10]);
+        let VirtualAddress = vec2u32(&contents[..4]);
+        let SymbolTableIndex = vec2u32(&contents[4..8]);
+        let Type = vec2u16(&contents[8..10]);
         RelocationTable {
             VirtualAddress,
             SymbolTableIndex,
@@ -218,23 +214,20 @@ pub const IMAGE_SYM_CLASS_SECTION: i8 = 0x0068;
 pub const IMAGE_SYM_CLASS_WEAK_EXTERNAL: i8 = 0x0069;
 pub const IMAGE_SYM_CLASS_CLR_TOKEN: i8 = 0x006B;
 
-
-
-
-pub const IMAGE_REL_AMD64_ABSOLUTE  :u16 = 0x0000;
-pub const IMAGE_REL_AMD64_ADDR64    :u16 = 0x0001;
-pub const IMAGE_REL_AMD64_ADDR32    :u16 = 0x0002;
-pub const IMAGE_REL_AMD64_ADDR32NB  :u16 = 0x0003;
-pub const IMAGE_REL_AMD64_REL32     :u16 = 0x0004;
-pub const IMAGE_REL_AMD64_REL32_1   :u16 = 0x0005;
-pub const IMAGE_REL_AMD64_REL32_2   :u16 = 0x0006;
-pub const IMAGE_REL_AMD64_REL32_3   :u16 = 0x0007;
-pub const IMAGE_REL_AMD64_REL32_4   :u16 = 0x0008;
-pub const IMAGE_REL_AMD64_REL32_5   :u16 = 0x0009;
-pub const IMAGE_REL_AMD64_SECTION   :u16 = 0x000A;
-pub const IMAGE_REL_AMD64_SECREL    :u16 = 0x000B;
-pub const IMAGE_REL_AMD64_SECREL7   :u16 = 0x000C;
-pub const IMAGE_REL_AMD64_TOKEN     :u16 = 0x000D;
-pub const IMAGE_REL_AMD64_SREL32    :u16 = 0x000E;
-pub const IMAGE_REL_AMD64_PAIR      :u16 = 0x000F;
-pub const IMAGE_REL_AMD64_SSPAN32   :u16 = 0x0010;
+pub const IMAGE_REL_AMD64_ABSOLUTE: u16 = 0x0000;
+pub const IMAGE_REL_AMD64_ADDR64: u16 = 0x0001;
+pub const IMAGE_REL_AMD64_ADDR32: u16 = 0x0002;
+pub const IMAGE_REL_AMD64_ADDR32NB: u16 = 0x0003;
+pub const IMAGE_REL_AMD64_REL32: u16 = 0x0004;
+pub const IMAGE_REL_AMD64_REL32_1: u16 = 0x0005;
+pub const IMAGE_REL_AMD64_REL32_2: u16 = 0x0006;
+pub const IMAGE_REL_AMD64_REL32_3: u16 = 0x0007;
+pub const IMAGE_REL_AMD64_REL32_4: u16 = 0x0008;
+pub const IMAGE_REL_AMD64_REL32_5: u16 = 0x0009;
+pub const IMAGE_REL_AMD64_SECTION: u16 = 0x000A;
+pub const IMAGE_REL_AMD64_SECREL: u16 = 0x000B;
+pub const IMAGE_REL_AMD64_SECREL7: u16 = 0x000C;
+pub const IMAGE_REL_AMD64_TOKEN: u16 = 0x000D;
+pub const IMAGE_REL_AMD64_SREL32: u16 = 0x000E;
+pub const IMAGE_REL_AMD64_PAIR: u16 = 0x000F;
+pub const IMAGE_REL_AMD64_SSPAN32: u16 = 0x0010;
